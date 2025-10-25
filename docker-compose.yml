@@ -1,0 +1,31 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: telemetry
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports: ['5432:5432']
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql://demo:demo@db:5432/telemetry
+    depends_on: ['db']
+    ports: ['4000:4000']
+
+  frontend:
+    build: ./frontend
+    ports: ['5173:5173']
+    depends_on: ['backend']
+
+  simulator:
+    build: ./simulator
+    env_file: .env
+    depends_on: ['backend']
+volumes:
+  db-data:
