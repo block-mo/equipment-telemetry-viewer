@@ -1,7 +1,9 @@
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-EXPOSE 5173
-CMD ["npm", "run", "dev"]
+# FROM alpine:3.14
+# WORKDIR /app
+# COPY package*.json ./
+# RUN apk add --no-cache nodejs npm
+# RUN npm install
+# COPY . .
+# EXPOSE 5173
+# CMD ["npm", "run", "dev"]
+

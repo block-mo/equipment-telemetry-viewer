@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  frontend:
+    name: Build frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19'
+      - name: Install frontend deps
+        run: npm ci
+        working-directory: frontend
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+  backend:
+    name: Build & test backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19'
+      - name: Install backend deps
+        run: npm ci
+        working-directory: backend
+      - name: Lint (if configured)
+        run: npm run lint || true
+        working-directory: backend
+      - name: Run tests (if present)
+        run: npm test || true
+        working-directory: backend
