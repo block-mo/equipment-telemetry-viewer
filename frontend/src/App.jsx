@@ -1,36 +1,39 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect, useState } from "react";
+import DeviceList from "./components/DeviceList";
+import TelemetryChart from "./components/TelemetryChart";
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [devices, setDevices] = useState([]);
+  const [telemetry, setTelemetry] = useState({}); // { deviceId: [records...] }
+  const [selected, setSelected] = useState(null);
+
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:4000/ws");
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "telemetry") {
+        const { deviceId } = msg.payload;
+        setDevices((prev) =>
+          prev.includes(deviceId) ? prev : [...prev, deviceId]
+        );
+        setTelemetry((prev) => ({
+          ...prev,
+          [deviceId]: [...(prev[deviceId] || []), msg.payload].slice(-20), // keep last 20
+        }));
+      }
+    };
+
+    return () => ws.close();
+  }, []);
 
   return (
-    <>
-      <div>
-        <h1>This project is build on Vite and React</h1>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Telemetry Viewer</h1>
+      <DeviceList devices={devices} onSelect={setSelected} selected={selected} />
+      {selected && (
+        <TelemetryChart data={telemetry[selected] || []} deviceId={selected} />
+      )}
+    </div>
+  );
 }
-
-export default App
