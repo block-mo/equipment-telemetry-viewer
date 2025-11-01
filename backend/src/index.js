@@ -7,10 +7,35 @@ const bodyParser = require('express').json
 const { Pool } = require('pg')
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-async function initDb() {
-  const client = await pool.connect()
-  await client.query(`CREATE TABLE IF NOT EXISTS telemetry (id SERIAL PRIMARY KEY, device_id TEXT, ts TIMESTAMP DEFAULT NOW(), temperature REAL, vibration REAL, status TEXT);`)
-  client.release()
+// async function initDb() {
+//   const client = await pool.connect()
+//   await client.query(`CREATE TABLE IF NOT EXISTS telemetry (id SERIAL PRIMARY KEY, device_id TEXT, ts TIMESTAMP DEFAULT NOW(), temperature REAL, vibration REAL, status TEXT);`)
+//   client.release()
+// }
+// Initialize DB with retries
+async function initDb(retries = 8, delayMs = 2000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const client = await pool.connect()
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS telemetry (
+          id SERIAL PRIMARY KEY,
+          device_id TEXT,
+          ts TIMESTAMP DEFAULT NOW(),
+          temperature REAL,
+          vibration REAL,
+          status TEXT
+        );
+      `)
+      client.release()
+      console.log('DB ready')
+      return
+    } catch (err) {
+      console.warn(`DB connect attempt ${i + 1}/${retries} failed: ${err.message}`)
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+  throw new Error('Could not connect to DB after retries')
 }
 
 const app = express()
